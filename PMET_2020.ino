@@ -26,24 +26,27 @@ File myFile; // don't chagne gives name for the SD card file
 
 
 //define variables
-byte AlarmFlag = 0;
+byte AlarmFlag = 1;
 byte ledStatus = 1;
+float loop_repeat = 2;
+float loop_count = 1; 
 
 int voltPin = A0;
 int Volt;
 
 unsigned int sleepCounter;
 
+
 //_________________________________________________________________________________________________________________________________________________
-// define sampling interval for the datalogger and datalogger number.   YOU WILL NEED TO CHANGE THE "dataloggerID" and "sample_intergal"
+//Define datalogger name
 //_________________________________________________________________________________________________________________________________________________
 
 String dataloggerID = "DL_2"; // this is the name for the datalogger - change it to something unique for each datalogger
 
-float loop_count = 1; // don't change this.  
+
 
 //_________________________________________________________________________________________________________________________________________________
-// Create custom functions to sleep and wake-up microcontroller
+// Create custom functions
 //_________________________________________________________________________________________________________________________________________________
 
 
@@ -58,11 +61,8 @@ void wakeUp()        // here the interrupt is handled after wakeup
 //function that will put the atemga328 to sleep and turn off brown-out and ADC
 void going_to_sleep(){
   
-  digitalWrite(ledPin, HIGH);
-  delay(100);
-  digitalWrite(ledPin, LOW);
-  delay(100);
-  digitalWrite(ledPin, HIGH);
+  Serial.println("Going to sleep for awhile...");
+    
   delay(100);
 
   noInterrupts ();           // timed sequence follows
@@ -76,22 +76,24 @@ void going_to_sleep(){
 
 
 
-
 //_________________________________________________________________________________________________________________________________________________
-// Don't change this - SETUP loop - initializes SD card, moisture sensor and print warning to serial port (and blink fxn) if not working properly
+// SETUP LOOP 
+//      - initializes SD card, moisture sensor and print warning to serial port (and blink fxn) if not working properly
 //_________________________________________________________________________________________________________________________________________________
 
 // SETUP LOOP (same for RTC, sd card, and moisture sensors)
 void setup() {
 
-    //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
+  //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
   pinMode(wakePin, INPUT);
 
-  //switch-on the on-board led for 1 second for indicating that the sketch is ok and running
+  //set pin modes
   pinMode(ledPin, OUTPUT);
   pinMode(rtc_power, OUTPUT);
   pinMode(voltPin,INPUT);
 
+  //set pin status
+  digitalWrite(ledPin, HIGH);
   digitalWrite(rtc_power, HIGH);
   
   Wire.begin();
@@ -101,7 +103,7 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
-  Serial.print("Initializing SD card...");
+  Serial.println("Initializing SD card...");
   // On the Ethernet Shield, CS is pin 4. It's set as an output by default.
   // Note that even if it's not used as the CS pin, the hardware SS pin 
   // (10 on most Arduino boards, 53 on the Mega) must be left as an output 
@@ -109,12 +111,12 @@ void setup() {
    pinMode(10, OUTPUT);
    
   if (!SD.begin(4)) {
-    Serial.println("initialization failed!");
+    Serial.println("   initialization failed!");
     return;
   }
 
     // initialize the alarms to known values, clear the alarm flags, clear the alarm interrupt flags
-    Serial.println("initializing the RTC alarms");
+    Serial.println("initializing the RTC alarms...");
     rtc.armAlarm(1, false);
     rtc.clearAlarm(1);
     rtc.alarmInterrupt(1, false);
@@ -137,7 +139,7 @@ void setup() {
     myFile.println("date, time, logger_ID");  // save column headings to sd card  
     myFile.close();
 
-    delay(5000);
+    delay(500);
     digitalWrite(ledPin, LOW);
   
 }
@@ -152,7 +154,8 @@ void setup() {
 //___________________________________________________________________________________________________________________________________
 
 void loop() {
-  delay(5000);
+  
+  delay(100);
      
   //On first loop we enter the sleep mode
   if (AlarmFlag == 0) {
@@ -218,9 +221,9 @@ void loop() {
      delay(50); // give a little time for string to print to serial
 }
 
-  if (loop_count == 2) {
+  //Go into sleep mode when 'loop' has run loop_repeat times
+  if (loop_count == loop_repeat) {
 
-  Serial.println("going to sleep");
   //reset the alarm before putting the MCU asleep at the beginning of the next loop
   AlarmFlag = 0;
   loop_count = 1;
